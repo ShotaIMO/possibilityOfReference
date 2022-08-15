@@ -73,8 +73,8 @@ public class IOUIssueFlow {
             SecureHash previousHash2=results2.getTxhash();
 
             //2-3. set each previous Ref.State's StateAndRef.
-            StateAndRef<AddressState> addressBody1=getConsumedRefState(previousHash1);
-            StateAndRef<AddressState> addressBody2=getConsumedRefState(previousHash2);
+            StateAndRef<AddressState> addressBody1=getConsumedRefState(addressHash1);
+            StateAndRef<AddressState> addressBody2=getConsumedRefState(addressHash2);
 
             //3. create IOUState
             final IOUState state = subFlow(new InstanceGenerateFlow(currency, amount, lender, borrower));
@@ -121,6 +121,10 @@ public class IOUIssueFlow {
 
             SignedTransaction stx = subFlow(new CollectSignaturesFlow(ptx, sessions));
 
+            //if you wanna confirm ref.state's hash and index in the node's log, you should comment out following return statement.
+            //return subFlow(new FinalityFlow(stx, sessions));
+
+            //if you wanna confirm ref.state's hash and index in node terminal window, you should comment below(try-catch).
             try{
                 // 9. Assuming no exceptions, we can now finalise the transaction
                 return subFlow(new FinalityFlow(stx, sessions));
