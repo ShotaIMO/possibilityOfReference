@@ -60,9 +60,11 @@ public class IOUIssueFlow {
             if ( !borrower.equals(getOurIdentity())){
                 throw new FlowException("The Party of the borrower and the executing node are different..");
             }
-            //2. Set Transaction Hash here to search Ref.State
-            SecureHash addressHash1=getFirstUnconsumedRefState(addressStateIssuer).getRef().getTxhash();
-            SecureHash addressHash2=getSecondUnconsumedRefState(addressStateIssuer).getRef().getTxhash();
+            //2. Set Transaction Hash here to search Ref.State.
+            // index=0 means getting hash from first ref.state chain.
+            SecureHash addressHash1=getUnconsumedRefState(addressStateIssuer,0).getRef().getTxhash();
+            //index=1 means getting hash from second ref.state chain.
+            SecureHash addressHash2=getUnconsumedRefState(addressStateIssuer,1).getRef().getTxhash();
 
             //2-1. trace back to search previous Ref.State in the first chain.
             StateRef results1 =getServiceHub().getValidatedTransactions().getTransaction(addressHash1).getInputs().get(0);
@@ -73,8 +75,8 @@ public class IOUIssueFlow {
             SecureHash previousHash2=results2.getTxhash();
 
             //2-3. set each previous Ref.State's StateAndRef.
-            StateAndRef<AddressState> addressBody1=getConsumedRefState(addressHash1);
-            StateAndRef<AddressState> addressBody2=getConsumedRefState(addressHash2);
+            StateAndRef<AddressState> addressBody1=getConsumedRefState(previousHash1);
+            StateAndRef<AddressState> addressBody2=getConsumedRefState(previousHash2);
 
             //3. create IOUState
             final IOUState state = subFlow(new InstanceGenerateFlow(currency, amount, lender, borrower));
@@ -176,27 +178,45 @@ public class IOUIssueFlow {
          * In short, we can get firstly "moved" ref.state.
          * @return
          */
-        @Suspendable
-        public StateAndRef<AddressState> getFirstUnconsumedRefState(Party addressStateIssuer){
-
-            Predicate<StateAndRef<AddressState>> byIssuer=addressISU
-                    ->(addressISU.getState().getData().getIssuer().equals(addressStateIssuer));
-            List<StateAndRef<AddressState>> addressLists = getServiceHub().getVaultService().queryBy(AddressState.class)
-                    .getStates().stream().filter(byIssuer).collect(Collectors.toList());
-            if(addressLists.isEmpty()){
-                return null;
-            }else{
-                return addressLists.get(0);
-            }
-        }
+//        @Suspendable
+//        public StateAndRef<AddressState> getFirstUnconsumedRefState(Party addressStateIssuer){
+//
+//            Predicate<StateAndRef<AddressState>> byIssuer=addressISU
+//                    ->(addressISU.getState().getData().getIssuer().equals(addressStateIssuer));
+//            List<StateAndRef<AddressState>> addressLists = getServiceHub().getVaultService().queryBy(AddressState.class)
+//                    .getStates().stream().filter(byIssuer).collect(Collectors.toList());
+//            if(addressLists.isEmpty()){
+//                return null;
+//            }else{
+//                return addressLists.get(0);
+//            }
+//        }
         /**
          * This is the function which confirm whether the ref.state of purpose is truly included in vault query.
          * In short, we can get secondly "moved" ref.state.
          * @return
          */
-        @Suspendable
-        public StateAndRef<AddressState> getSecondUnconsumedRefState(Party addressStateIssuer){
+//        @Suspendable
+//        public StateAndRef<AddressState> getSecondUnconsumedRefState(Party addressStateIssuer){
+//
+//            Predicate<StateAndRef<AddressState>> byIssuer=addressISU
+//                    ->(addressISU.getState().getData().getIssuer().equals(addressStateIssuer));
+//            List<StateAndRef<AddressState>> addressLists = getServiceHub().getVaultService().queryBy(AddressState.class)
+//                    .getStates().stream().filter(byIssuer).collect(Collectors.toList());
+//            if(addressLists.isEmpty()){
+//                return null;
+//            }else{
+//                return addressLists.get(1);
+//            }
+//        }
 
+        /**
+         * This is the function which confirm whether the ref.state of purpose is truly included in vault query.
+         * In short, we can get "moved" ref.state.
+         * @return
+         */
+        @Suspendable
+        public StateAndRef<AddressState> getUnconsumedRefState(Party addressStateIssuer, int index){
             Predicate<StateAndRef<AddressState>> byIssuer=addressISU
                     ->(addressISU.getState().getData().getIssuer().equals(addressStateIssuer));
             List<StateAndRef<AddressState>> addressLists = getServiceHub().getVaultService().queryBy(AddressState.class)
@@ -204,7 +224,7 @@ public class IOUIssueFlow {
             if(addressLists.isEmpty()){
                 return null;
             }else{
-                return addressLists.get(1);
+                return addressLists.get(index);
             }
         }
 
