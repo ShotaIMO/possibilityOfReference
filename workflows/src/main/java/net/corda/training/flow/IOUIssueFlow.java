@@ -62,21 +62,21 @@ public class IOUIssueFlow {
             }
             //2. Set Transaction Hash here to search Ref.State.
             // index=0 means getting hash from first ref.state chain.
-            SecureHash addressHash1=getUnconsumedRefState(addressStateIssuer,0).getRef().getTxhash();
-            //index=1 means getting hash from second ref.state chain.
-            SecureHash addressHash2=getUnconsumedRefState(addressStateIssuer,1).getRef().getTxhash();
-
-            //2-1. trace back to search previous Ref.State in the first chain.
-            StateRef results1 =getServiceHub().getValidatedTransactions().getTransaction(addressHash1).getInputs().get(0);
-            SecureHash previousHash1=results1.getTxhash();
-
-            //2-2. trace back to search previous Ref.State in the second chain.
-            StateRef results2 =getServiceHub().getValidatedTransactions().getTransaction(addressHash2).getInputs().get(0);
-            SecureHash previousHash2=results2.getTxhash();
-
-            //2-3. set each previous Ref.State's StateAndRef.
-            StateAndRef<AddressState> addressBody1=getConsumedRefState(previousHash1);
-            StateAndRef<AddressState> addressBody2=getConsumedRefState(previousHash2);
+//            SecureHash addressHash1=getUnconsumedRefState(addressStateIssuer,0).getRef().getTxhash();
+//            //index=1 means getting hash from second ref.state chain.
+//            SecureHash addressHash2=getUnconsumedRefState(addressStateIssuer,1).getRef().getTxhash();
+//
+//            //2-1. trace back to search previous Ref.State in the first chain.
+//            StateRef results1 =getServiceHub().getValidatedTransactions().getTransaction(addressHash1).getInputs().get(0);
+//            SecureHash previousHash1=results1.getTxhash();
+//
+//            //2-2. trace back to search previous Ref.State in the second chain.
+//            StateRef results2 =getServiceHub().getValidatedTransactions().getTransaction(addressHash2).getInputs().get(0);
+//            SecureHash previousHash2=results2.getTxhash();
+//
+//            //2-3. set each previous Ref.State's StateAndRef.
+//            StateAndRef<AddressState> addressBody1=getConsumedRefState(previousHash1);
+//            StateAndRef<AddressState> addressBody2=getConsumedRefState(previousHash2);
 
             //3. create IOUState
             final IOUState state = subFlow(new InstanceGenerateFlow(currency, amount, lender, borrower));
@@ -99,12 +99,22 @@ public class IOUIssueFlow {
             builder.addOutputState(state, IOUContract.IOU_CONTRACT_ID);
             builder.addCommand(issueCommand);
 
-            if(addressBody1!=null){
-                builder.addReferenceState(new ReferencedStateAndRef<>(addressBody1));
+            for(int i=0;i<15;i++){
+                SecureHash addressHash=getUnconsumedRefState(addressStateIssuer,i).getRef().getTxhash();
+
+                StateRef results =getServiceHub().getValidatedTransactions().getTransaction(addressHash).getInputs().get(0);
+
+                SecureHash previousHash=results.getTxhash();
+
+                StateAndRef<AddressState> addressBody=getConsumedRefState(previousHash);
+
+                if(addressBody!=null){
+                    builder.addReferenceState(new ReferencedStateAndRef<>(addressBody));
+                }
+
             }
-            if(addressBody2!=null){
-                builder.addReferenceState(new ReferencedStateAndRef<>(addressBody2));
-            }
+
+
 
             // 7. Verify and sign it with our KeyPair.
             builder.verify(getServiceHub());
@@ -124,52 +134,52 @@ public class IOUIssueFlow {
             SignedTransaction stx = subFlow(new CollectSignaturesFlow(ptx, sessions));
 
             //if you wanna confirm ref.state's hash and index in the node's log, you should comment out following return statement.
-            //return subFlow(new FinalityFlow(stx, sessions));
+            return subFlow(new FinalityFlow(stx, sessions));
 
             //if you wanna confirm ref.state's hash and index in node terminal window, you should comment below(try-catch).
-            try{
-                // 9. Assuming no exceptions, we can now finalise the transaction
-                return subFlow(new FinalityFlow(stx, sessions));
-
-            }catch(net.corda.core.flows.NotaryException e){
-                //if "NotaryException" is detected, following process will be executed.
-                //get error message from the error object.
-                String str=e.getMessage();
-
-                //if previous ref.State is included in the error object, display hash and index into Node terminal window.
-                //Note. Regarding first ref.state chain.
-                if(str.contains(String.valueOf(previousHash1))){
-                    SecureHash firstly_Published_RefState=previousHash1;
-                    System.out.println("Firstly published Ref.State is "+firstly_Published_RefState);
-
-                    int index_First_refState=addressBody1.getRef().getIndex();
-                    if(str.contains(String.valueOf(index_First_refState))){
-                        System.out.println("Firstly published Ref.State's index is "+index_First_refState);
-                    }
-                    else{
-                        System.out.println("Cannot find Ref.State whose index is "+index_First_refState);
-                    }
-                }else {
-                    System.out.println(previousHash1+" is not included in the error object.");
-                }
+//            try{
+//                // 9. Assuming no exceptions, we can now finalise the transaction
+//                return subFlow(new FinalityFlow(stx, sessions));
+//
+//            }catch(net.corda.core.flows.NotaryException e){
+//                //if "NotaryException" is detected, following process will be executed.
+//                //get error message from the error object.
+//                String str=e.getMessage();
+//
+//                //if previous ref.State is included in the error object, display hash and index into Node terminal window.
+//                //Note. Regarding first ref.state chain.
+//                if(str.contains(String.valueOf(previousHash1))){
+//                    SecureHash firstly_Published_RefState=previousHash1;
+//                    System.out.println("Firstly published Ref.State is "+firstly_Published_RefState);
+//
+//                    int index_First_refState=addressBody1.getRef().getIndex();
+//                    if(str.contains(String.valueOf(index_First_refState))){
+//                        System.out.println("Firstly published Ref.State's index is "+index_First_refState);
+//                    }
+//                    else{
+//                        System.out.println("Cannot find Ref.State whose index is "+index_First_refState);
+//                    }
+//                }else {
+//                    System.out.println(previousHash1+" is not included in the error object.");
+//                }
 
                 //if previous ref.State is included in the error object, display hash and index into Node terminal window.
                 //Note. Regarding second ref.state chain.
-                if(str.contains(String.valueOf(previousHash2))){
-                    SecureHash secondly_Published_RefState=previousHash2;
-                    System.out.println("Secondly published Ref.State is "+secondly_Published_RefState);
-
-                    int index_Second_refState=addressBody2.getRef().getIndex();
-                    if(str.contains(String.valueOf(index_Second_refState))){
-                        System.out.println("Secondly published Ref.State's index is "+index_Second_refState);
-                    }else{
-                        System.out.println("Cannot find Ref.State whose index is "+index_Second_refState);
-                    }
-                }else {
-                    System.out.println(previousHash2+" is not included in the error object.");
-                }
-                return null;
-            }
+//                if(str.contains(String.valueOf(previousHash2))){
+//                    SecureHash secondly_Published_RefState=previousHash2;
+//                    System.out.println("Secondly published Ref.State is "+secondly_Published_RefState);
+//
+//                    int index_Second_refState=addressBody2.getRef().getIndex();
+//                    if(str.contains(String.valueOf(index_Second_refState))){
+//                        System.out.println("Secondly published Ref.State's index is "+index_Second_refState);
+//                    }else{
+//                        System.out.println("Cannot find Ref.State whose index is "+index_Second_refState);
+//                    }
+//                }else {
+//                    System.out.println(previousHash2+" is not included in the error object.");
+//                }
+//                return null;
+//            }
         }
 
 
