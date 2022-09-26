@@ -60,46 +60,30 @@ public class IOUIssueFlow {
             if ( !borrower.equals(getOurIdentity())){
                 throw new FlowException("The Party of the borrower and the executing node are different..");
             }
-            //2. Set Transaction Hash here to search Ref.State.
-            // index=0 means getting hash from first ref.state chain.
-//            SecureHash addressHash1=getUnconsumedRefState(addressStateIssuer,0).getRef().getTxhash();
-//            //index=1 means getting hash from second ref.state chain.
-//            SecureHash addressHash2=getUnconsumedRefState(addressStateIssuer,1).getRef().getTxhash();
-//
-//            //2-1. trace back to search previous Ref.State in the first chain.
-//            StateRef results1 =getServiceHub().getValidatedTransactions().getTransaction(addressHash1).getInputs().get(0);
-//            SecureHash previousHash1=results1.getTxhash();
-//
-//            //2-2. trace back to search previous Ref.State in the second chain.
-//            StateRef results2 =getServiceHub().getValidatedTransactions().getTransaction(addressHash2).getInputs().get(0);
-//            SecureHash previousHash2=results2.getTxhash();
-//
-//            //2-3. set each previous Ref.State's StateAndRef.
-//            StateAndRef<AddressState> addressBody1=getConsumedRefState(previousHash1);
-//            StateAndRef<AddressState> addressBody2=getConsumedRefState(previousHash2);
 
-            //3. create IOUState
+            //2. create IOUState
             final IOUState state = subFlow(new InstanceGenerateFlow(currency, amount, lender, borrower));
 
-            // 4. Get a reference to the notary service on our network and our key pair.
+            // 3. Get a reference to the notary service on our network and our key pair.
             // Note: ongoing work to support multiple notary identities is still in progress.
             final Party notary = getServiceHub().getNetworkMapCache().getNotaryIdentities().get(0);
 
-            // 5. Create a new issue command.
+            // 4. Create a new issue command.
             // Remember that a command is a CommandData object and a list of CompositeKeys
             final Command<Issue> issueCommand = new Command<>(
                     new Issue(), state.getParticipants()
                     .stream().map(AbstractParty::getOwningKey)
                     .collect(Collectors.toList()));
 
-            // 6. Create a new TransactionBuilder object.
+            // 5. Create a new TransactionBuilder object.
             final TransactionBuilder builder = new TransactionBuilder(notary);
 
-            // 7. Add the iou as an output state and AddressState, as well as a command to the transaction builder.
+            // 6. Add the iou as an output state and AddressState, as well as a command to the transaction builder.
             builder.addOutputState(state, IOUContract.IOU_CONTRACT_ID);
             builder.addCommand(issueCommand);
 
-            for(int i=0;i<15;i++){
+            //7. Add multiple consumed ref.state into tx
+            for(int i=0;i<10;i++){
                 SecureHash addressHash=getUnconsumedRefState(addressStateIssuer,i).getRef().getTxhash();
 
                 StateRef results =getServiceHub().getValidatedTransactions().getTransaction(addressHash).getInputs().get(0);
@@ -114,13 +98,11 @@ public class IOUIssueFlow {
 
             }
 
-
-
-            // 7. Verify and sign it with our KeyPair.
+            // 8. Verify and sign it with our KeyPair.
             builder.verify(getServiceHub());
             final SignedTransaction ptx = getServiceHub().signInitialTransaction(builder);
 
-            // 8. Collect the other party's signature using the SignTransactionFlow.
+            // 9. Collect the other party's signature using the SignTransactionFlow.
             List<Party> otherParties = state.getParticipants()
                     .stream().map(el -> (Party)el)
                     .collect(Collectors.toList());
@@ -136,89 +118,7 @@ public class IOUIssueFlow {
             //if you wanna confirm ref.state's hash and index in the node's log, you should comment out following return statement.
             return subFlow(new FinalityFlow(stx, sessions));
 
-            //if you wanna confirm ref.state's hash and index in node terminal window, you should comment below(try-catch).
-//            try{
-//                // 9. Assuming no exceptions, we can now finalise the transaction
-//                return subFlow(new FinalityFlow(stx, sessions));
-//
-//            }catch(net.corda.core.flows.NotaryException e){
-//                //if "NotaryException" is detected, following process will be executed.
-//                //get error message from the error object.
-//                String str=e.getMessage();
-//
-//                //if previous ref.State is included in the error object, display hash and index into Node terminal window.
-//                //Note. Regarding first ref.state chain.
-//                if(str.contains(String.valueOf(previousHash1))){
-//                    SecureHash firstly_Published_RefState=previousHash1;
-//                    System.out.println("Firstly published Ref.State is "+firstly_Published_RefState);
-//
-//                    int index_First_refState=addressBody1.getRef().getIndex();
-//                    if(str.contains(String.valueOf(index_First_refState))){
-//                        System.out.println("Firstly published Ref.State's index is "+index_First_refState);
-//                    }
-//                    else{
-//                        System.out.println("Cannot find Ref.State whose index is "+index_First_refState);
-//                    }
-//                }else {
-//                    System.out.println(previousHash1+" is not included in the error object.");
-//                }
-
-                //if previous ref.State is included in the error object, display hash and index into Node terminal window.
-                //Note. Regarding second ref.state chain.
-//                if(str.contains(String.valueOf(previousHash2))){
-//                    SecureHash secondly_Published_RefState=previousHash2;
-//                    System.out.println("Secondly published Ref.State is "+secondly_Published_RefState);
-//
-//                    int index_Second_refState=addressBody2.getRef().getIndex();
-//                    if(str.contains(String.valueOf(index_Second_refState))){
-//                        System.out.println("Secondly published Ref.State's index is "+index_Second_refState);
-//                    }else{
-//                        System.out.println("Cannot find Ref.State whose index is "+index_Second_refState);
-//                    }
-//                }else {
-//                    System.out.println(previousHash2+" is not included in the error object.");
-//                }
-//                return null;
-//            }
         }
-
-
-        /**
-         * This is the function which confirm whether the ref.state of purpose is truly included in vault query.
-         * In short, we can get firstly "moved" ref.state.
-         * @return
-         */
-//        @Suspendable
-//        public StateAndRef<AddressState> getFirstUnconsumedRefState(Party addressStateIssuer){
-//
-//            Predicate<StateAndRef<AddressState>> byIssuer=addressISU
-//                    ->(addressISU.getState().getData().getIssuer().equals(addressStateIssuer));
-//            List<StateAndRef<AddressState>> addressLists = getServiceHub().getVaultService().queryBy(AddressState.class)
-//                    .getStates().stream().filter(byIssuer).collect(Collectors.toList());
-//            if(addressLists.isEmpty()){
-//                return null;
-//            }else{
-//                return addressLists.get(0);
-//            }
-//        }
-        /**
-         * This is the function which confirm whether the ref.state of purpose is truly included in vault query.
-         * In short, we can get secondly "moved" ref.state.
-         * @return
-         */
-//        @Suspendable
-//        public StateAndRef<AddressState> getSecondUnconsumedRefState(Party addressStateIssuer){
-//
-//            Predicate<StateAndRef<AddressState>> byIssuer=addressISU
-//                    ->(addressISU.getState().getData().getIssuer().equals(addressStateIssuer));
-//            List<StateAndRef<AddressState>> addressLists = getServiceHub().getVaultService().queryBy(AddressState.class)
-//                    .getStates().stream().filter(byIssuer).collect(Collectors.toList());
-//            if(addressLists.isEmpty()){
-//                return null;
-//            }else{
-//                return addressLists.get(1);
-//            }
-//        }
 
         /**
          * This is the function which confirm whether the ref.state of purpose is truly included in vault query.
