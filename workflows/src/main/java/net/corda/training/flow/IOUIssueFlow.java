@@ -95,7 +95,6 @@ public class IOUIssueFlow {
                 if(addressBody!=null){
                     builder.addReferenceState(new ReferencedStateAndRef<>(addressBody));
                 }
-
             }
 
             // 8. Verify and sign it with our KeyPair.
