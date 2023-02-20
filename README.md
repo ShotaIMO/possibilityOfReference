@@ -10,3 +10,4 @@
    引数には"Party: 発行者"と"Address: 住所"を指定します。
 2. 続いて、AddressStateを更新するためMoveFlowを実行します。
    引数には"Address: 住所"と"linearId: 先ほど発行したAddressStateのLInearId"を指定します
+3. 
