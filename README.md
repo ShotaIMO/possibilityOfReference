@@ -6,5 +6,7 @@
 今回は、Corda trainingのコードにRef.stateとしてAddressStateという住所を表すstateを追加しました。
 
 ##　起動手順
-1. はじめにRef.stateとして扱うAddressStateを発行するためPublishFlowを実行します。引数には"Party: 発行者"と"Address: 住所"を指定します
-2. 
+1. はじめにRef.stateとして扱うAddressStateを発行するためPublishFlowを実行します。
+   引数には"Party: 発行者"と"Address: 住所"を指定します。
+2. 続いて、AddressStateを更新するためMoveFlowを実行します。
+   引数には"Address: 住所"と"linearId: 先ほど発行したAddressStateのLInearId"を指定します
