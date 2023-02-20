@@ -27,11 +27,14 @@ import java.util.List;
 @BelongsToContract(AddressContract.class)
 public class AddressState implements LinearState {
 
-   // private static int ID_AddressState=1;
+    //issuer of this state.
     @NotNull
     private final Party issuer;
+
+    //address(city name or something)
     @NotNull
     private final String address;
+
     @NotNull
     private final UniqueIdentifier linearId;
 

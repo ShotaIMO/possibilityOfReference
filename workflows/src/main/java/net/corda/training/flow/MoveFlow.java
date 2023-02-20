@@ -22,6 +22,7 @@ import java.util.Collections;
  */
 
 public class MoveFlow {
+
     @InitiatingFlow
     @StartableByRPC
     public static class Initiator extends FlowLogic<StateAndRef<AddressState>>{
@@ -51,12 +52,13 @@ public class MoveFlow {
         @Suspendable
         @Override
         public StateAndRef<AddressState> call() throws FlowException {
+
             //1. Get a reference to the notary service on our network.
             Party notary = getServiceHub().getNetworkMapCache().getNotaryIdentities().get(0);
 
-            //2. Find already published AddressState.
+            //2. Find already published AddressState using addressState.
             StateAndRef<AddressState> oldState = null;
-            //2-1. Search Ref.State that matches parameter of linearId using "for loop".
+            //2-1. Search AddressState that matches parameter of linearId using "for loop".
             for (int i = 0; i <= getServiceHub().getVaultService().queryBy(AddressState.class).getStates().size(); i++) {
                 oldState = getServiceHub().getVaultService().queryBy(AddressState.class).getStates().get(i);
                 UniqueIdentifier linearId_judge = oldState.getState().getData().getLinearId();
@@ -72,7 +74,9 @@ public class MoveFlow {
                     newAddress,
                     newLinearId
             );
-            System.out.println("linearId_judge"+newLinearId);
+
+            //show linearId just in case.
+            System.out.println("linearId_judge= "+newLinearId);
 
 
             //3. Add inputState, outputState and Command into transaction.

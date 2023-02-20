@@ -43,13 +43,17 @@ public class IOUIssueFlow {
         private final Party lender;
         private final Party borrower;
         private final Party addressStateIssuer;
+        private final int number;
+        private final boolean previous;
 
-        public InitiatorFlow(String currency, long amount, Party lender, Party borrower,Party addressStateIssuer) {
+        public InitiatorFlow(String currency, long amount, Party lender, Party borrower,Party addressStateIssuer, int number, boolean previous) {
             this.currency = currency;
             this.amount = amount;
             this.lender = lender;
             this.borrower = borrower;
             this.addressStateIssuer=addressStateIssuer;
+            this.number=number;
+            this.previous=previous;
         }
 
         @Suspendable
@@ -82,19 +86,47 @@ public class IOUIssueFlow {
             builder.addOutputState(state, IOUContract.IOU_CONTRACT_ID);
             builder.addCommand(issueCommand);
 
-            //7. Add multiple consumed ref.state into tx
-            for(int i=0;i<10;i++){
-                SecureHash addressHash=getUnconsumedRefState(addressStateIssuer,i).getRef().getTxhash();
+            //7. Add multiple consumed or unconsumed ref.states into tx
+            for(int i=0;i<number;i++){
+            //in case of including latest ref state
+                if(!previous){
+                    //include latest state
+                    //7-1. get latest ref.state's hash from vault.
+                    StateAndRef<AddressState> addressBody=getUnconsumedRefState(addressStateIssuer,i);
 
-                StateRef results =getServiceHub().getValidatedTransactions().getTransaction(addressHash).getInputs().get(0);
+                    //7-2. add latest ref.state into txBuilder.
+                    if(addressBody!=null){
+                        builder.addReferenceState(new ReferencedStateAndRef<>(addressBody));
+                    }
 
-                SecureHash previousHash=results.getTxhash();
+                }else {
+                    //in case of not including previous ref's state
+                    //7-1. get the latest ref.state in each chain from vault.
+                    SecureHash latestHash_forPrevious=getUnconsumedRefState(addressStateIssuer,i).getRef().getTxhash();
 
-                StateAndRef<AddressState> addressBody=getConsumedRefState(previousHash);
+                    //7-2. search previous ref.state from each chain and get txhash.
+                    SecureHash previousHash=getServiceHub().getValidatedTransactions().getTransaction(latestHash_forPrevious).getInputs().get(0).getTxhash();
 
-                if(addressBody!=null){
-                    builder.addReferenceState(new ReferencedStateAndRef<>(addressBody));
+                    //7-3. search
+                    StateAndRef<AddressState> addressBody=getConsumedRefState(previousHash);
+
+                    if(addressBody!=null){
+                        builder.addReferenceState(new ReferencedStateAndRef<>(addressBody));
+                    }
                 }
+//                //7-1. get the latest ref.state in each chain from vault.
+//                SecureHash latestHash_forPrevious=getUnconsumedRefState(addressStateIssuer,i).getRef().getTxhash();
+//
+//                //7-2. search previous ref.state from each chain and get txhash.
+//                SecureHash previousHash=getServiceHub().getValidatedTransactions().getTransaction(latestHash_forPrevious).getInputs().get(0).getTxhash();
+//
+//                //7-3. search
+//                StateAndRef<AddressState> addressBody=getConsumedRefState(previousHash);
+//
+//                if(addressBody!=null){
+//                    builder.addReferenceState(new ReferencedStateAndRef<>(addressBody));
+//                }
+
             }
 
             // 8. Verify and sign it with our KeyPair.
@@ -120,12 +152,12 @@ public class IOUIssueFlow {
         }
 
         /**
-         * This is the function which confirm whether the ref.state of purpose is truly included in vault query.
+         * This is the function that confirm whether the ref.state of purpose is truly included in vault query.
          * In short, we can get "moved" ref.state.
          * @return
          */
         @Suspendable
-        public StateAndRef<AddressState> getUnconsumedRefState(Party addressStateIssuer, int index){
+        public StateAndRef<AddressState> getUnconsumedRefState(Party addressStateIssuer,int index){
             Predicate<StateAndRef<AddressState>> byIssuer=addressISU
                     ->(addressISU.getState().getData().getIssuer().equals(addressStateIssuer));
             List<StateAndRef<AddressState>> addressLists = getServiceHub().getVaultService().queryBy(AddressState.class)
@@ -138,13 +170,16 @@ public class IOUIssueFlow {
         }
 
         /**
-         * This is the function which search previous ref.state.
+         * This is the function that search previous ref.state.
          * In short, we can get previous ref.state.
          * @return
          */
         @Suspendable
         public StateAndRef<AddressState> getConsumedRefState(SecureHash previousHash){
             QueryCriteria queryCriteria=new QueryCriteria.VaultQueryCriteria(Vault.StateStatus.ALL);
+            //it's gonna be okay if this is "CONSUMED".
+            //QueryCriteria queryCriteria=new QueryCriteria.VaultQueryCriteria(Vault.StateStatus.CONSUMED);
+
             //search the hash equal to the previous hash and put it in the list.
             Predicate<StateAndRef<AddressState>> byHash=address_hash
                     ->(address_hash.getRef().getTxhash().equals(previousHash));

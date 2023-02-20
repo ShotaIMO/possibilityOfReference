@@ -16,7 +16,7 @@ import java.util.Collections;
 
 /**
  * This is the flow which handles publishing of new AddressState on the ledger.
- * Gathering the counterparty's signature is handled by the [CollectSignaturesFlow].
+ * Gathering the counter party's signature is handled by the [CollectSignaturesFlow].
  * Notarisation (if required) and commitment to the ledger is handled by the [FinalityFlow].
  * The flow returns the [SignedTransaction] that was committed to the ledger.
  */
@@ -41,8 +41,11 @@ public class PublishFlow {
                 FINALISING_TRANSACTION
         );
 
+        //issuer of AddressState.
         @NotNull
         private final Party issuer;
+
+        //address (you can set city name or something)
         @NotNull
         private final String address;
 
@@ -54,6 +57,7 @@ public class PublishFlow {
         @Suspendable
         @Override
         public StateAndRef<AddressState> call() throws FlowException {
+
             //1. Get a reference to the notary service on our network.
             Party notary=getServiceHub().getNetworkMapCache().getNotaryIdentities().get(0);
             progressTracker.setCurrentStep(GENERATING_TRANSACTION);
@@ -70,7 +74,7 @@ public class PublishFlow {
             progressTracker.setCurrentStep(SIGNING_TRANSACTION);
             SignedTransaction partSignedTx=getServiceHub().signInitialTransaction(txBuilder);
 
-            System.out.println("LinearId is =" +state.getLinearId());
+            System.out.println("LinearId is = " +state.getLinearId());
 
             //4. Finalise the transaction.
             progressTracker.setCurrentStep(FINALISING_TRANSACTION);

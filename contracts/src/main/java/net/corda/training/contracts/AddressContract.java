@@ -21,10 +21,11 @@ public class AddressContract implements Contract{
     public static String ADDRESS_CONTRACT_ID="net.corda.training.contracts.AddressContract";
 
     public interface Commands extends CommandData{
-        //Publish command means creating a new Ref.State
+
+        //Command which create a new AddressState
         class Publish implements Commands{}
 
-        //Move command means updating Party's address.
+        //Command which update address parameter
         class Move implements  Commands{}
     }
 
@@ -36,8 +37,8 @@ public class AddressContract implements Contract{
          * - Publish: Issuing a new [AddressState] on the ledger.
          * - Move: Updating AddressState which means transfer to the new location.
          */
-
         final CommandWithParties<Commands> command=requireSingleCommand(tx.getCommands(), Commands.class);
+
         final AddressContract.Commands commandData = command.getValue();
 
         if(commandData.equals(new Commands.Publish())){
