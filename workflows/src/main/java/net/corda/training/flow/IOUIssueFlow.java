@@ -114,19 +114,6 @@ public class IOUIssueFlow {
                         builder.addReferenceState(new ReferencedStateAndRef<>(addressBody));
                     }
                 }
-//                //7-1. get the latest ref.state in each chain from vault.
-//                SecureHash latestHash_forPrevious=getUnconsumedRefState(addressStateIssuer,i).getRef().getTxhash();
-//
-//                //7-2. search previous ref.state from each chain and get txhash.
-//                SecureHash previousHash=getServiceHub().getValidatedTransactions().getTransaction(latestHash_forPrevious).getInputs().get(0).getTxhash();
-//
-//                //7-3. search
-//                StateAndRef<AddressState> addressBody=getConsumedRefState(previousHash);
-//
-//                if(addressBody!=null){
-//                    builder.addReferenceState(new ReferencedStateAndRef<>(addressBody));
-//                }
-
             }
 
             // 8. Verify and sign it with our KeyPair.
@@ -177,10 +164,6 @@ public class IOUIssueFlow {
         @Suspendable
         public StateAndRef<AddressState> getConsumedRefState(SecureHash previousHash){
             QueryCriteria queryCriteria=new QueryCriteria.VaultQueryCriteria(Vault.StateStatus.ALL);
-            //it's gonna be okay if this is "CONSUMED".
-            //QueryCriteria queryCriteria=new QueryCriteria.VaultQueryCriteria(Vault.StateStatus.CONSUMED);
-
-            //search the hash equal to the previous hash and put it in the list.
             Predicate<StateAndRef<AddressState>> byHash=address_hash
                     ->(address_hash.getRef().getTxhash().equals(previousHash));
             List<StateAndRef<AddressState>> addressHashLists=getServiceHub().getVaultService()
