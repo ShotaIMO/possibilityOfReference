@@ -5,7 +5,7 @@
 ※このコードは"調査2: 複数のRef.stateを含めた場合、Notaryが検知したRef.stateはログにて全て確認できるか"を調査するコードになります。
 今回は、Corda trainingのコードにRef.stateとしてAddressStateという住所を表すstateを追加しました。
 
-# To wonderful contributors
+## To wonderful contributors
 This code is the code used in "Possibility of Reference State" held at Corda Winter Tech Meetup held in Japan on February 22, 2023.
 I added Ref.state function to existing codes and conducted various investigations.
 Thank you for your help.
