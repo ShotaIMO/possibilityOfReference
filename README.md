@@ -3,7 +3,8 @@
 ## はじめに
 今回のコードは2023年2月22に開催されたCorda Tech Meetup 冬の陣で行った"Reference Stateの可能性"にて使用したコードになります。
 ※このコードは"調査2: 複数のRef.stateを含めた場合、Notaryが検知したRef.stateはログにて全て確認できるか"を調査するコードになります。
-今回は、Corda trainingのコードにRef.stateとしてAddressStateという住所を表すstateを追加しました。
+今回は、Corda trainingのIOUIssueFlowに関する処理にRef.stateとしてAddressStateという住所を表すstateを追加しました。
+※TransferFlowやSettleFlowにはRef.stateの機能を追加していません
 
 ## To wonderful contributors
 This code is the code used in "Possibility of Reference State" held at Corda Winter Tech Meetup held in Japan on February 22, 2023.
@@ -12,6 +13,7 @@ Thank you for your help.
 
 
 ## 起動手順
+※```cd このプロジェクトのルートディレクトリ```→```gradlew deployNodes```→```cd build```→```cd nodes```→```runnodes```でNodeTerminalWindowを立ち上げてください
 1. はじめにRef.stateとして扱うAddressStateを発行するためPublishFlowを実行します。
    引数には"Party: 発行者"と"Address: 住所"を指定します。
    
